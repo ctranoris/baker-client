@@ -43,9 +43,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.cxf.helpers.IOUtils;
 import org.apache.cxf.jaxrs.client.WebClient;
+import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.MappingJsonFactory;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 
 public class RepositoryWebClient implements IRepositoryWebClient {
 
@@ -110,9 +113,10 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 	@Override
 	public SubscribedResource registerClientToRepo(String uuid) {
 
+		SubscribedResource sr = new SubscribedResource();
+		
 		try {
-			String url = System.getProperty("marketplace_api_endpoint") + "/services/api/repo/registerresource";
-			SubscribedResource sr = new SubscribedResource();
+			String url = System.getProperty("marketplace_api_endpoint") + "/registerresource";
 			BakerUser owner = new BakerUser();
 
 			sr.setOwner(owner);
@@ -149,11 +153,11 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 			if (r.getStatus() == Response.Status.OK.getStatusCode()) {
 				MappingJsonFactory factory = new MappingJsonFactory();
 				JsonParser parser = factory.createJsonParser((InputStream) r.getEntity());
-				SubscribedResource output = parser.readValueAs(SubscribedResource.class);
+				sr = parser.readValueAs(SubscribedResource.class);
 
-				logger.info("registerClientToRepo OK SubscribedResource: " + output.getId() + " , for uuid=" + output.getUuid());
-
-				return output;
+				logger.info("registerClientToRepo OK SubscribedResource: " + sr.getId() + " , for uuid=" + sr.getUuid());
+					
+				return sr;
 			}
 
 		} catch (JsonParseException e) {
@@ -164,6 +168,66 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 
 		return null;
 
+	}
+
+	@Override
+	public List<BunMetadata> getRepoBuns(String url) {
+		logger.info("fetchMetadata from: " + url  );
+
+		try {
+			List<Object> providers = new ArrayList<Object>();
+			providers.add(new org.codehaus.jackson.jaxrs.JacksonJsonProvider());
+			WebClient client = WebClient.create(url, providers);
+			Response r = client.accept("application/json").type("application/json").get();
+			if (r.getStatus() == Response.Status.OK.getStatusCode()) {
+				MappingJsonFactory factory = new MappingJsonFactory();
+				JsonParser parser = factory.createJsonParser((InputStream) r.getEntity());
+				
+				JsonNode node = parser.readValueAsTree();
+				ObjectMapper mapper = new ObjectMapper();
+				TypeReference<List<BunMetadata>> typeRef = new TypeReference<List<BunMetadata>>() {
+				};
+				List<BunMetadata> output = mapper.readValue(node.traverse(), typeRef);				
+				
+				return output;
+			}
+
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	@Override
+	public BunMetadata getRepoBun(String url) {
+		logger.info("fetchMetadata from: " + url  );
+
+		try {
+			List<Object> providers = new ArrayList<Object>();
+			providers.add(new org.codehaus.jackson.jaxrs.JacksonJsonProvider());
+			WebClient client = WebClient.create(url, providers);
+			Response r = client.accept("application/json").type("application/json").get();
+			if (r.getStatus() == Response.Status.OK.getStatusCode()) {
+				MappingJsonFactory factory = new MappingJsonFactory();
+				JsonParser parser = factory.createJsonParser((InputStream) r.getEntity());
+				BunMetadata output = parser.readValueAs(BunMetadata.class);
+				return output;
+			}
+
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return null;
 	}
 
 }

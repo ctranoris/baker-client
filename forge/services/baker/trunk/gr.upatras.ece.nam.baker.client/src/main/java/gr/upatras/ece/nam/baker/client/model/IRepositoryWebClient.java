@@ -16,6 +16,7 @@
 package gr.upatras.ece.nam.baker.client.model;
 
 import java.nio.file.Path;
+import java.util.List;
 
 public interface IRepositoryWebClient {
 	
@@ -40,6 +41,12 @@ public interface IRepositoryWebClient {
 	 * @param uuid
 	 * @return true if registered OK
 	 */
-	public SubscribedResource registerClientToRepo(String uuid); 
+	public SubscribedResource registerClientToRepo(String uuid);
+
+
+	public List<BunMetadata> getRepoBuns(String url);
+
+
+	public BunMetadata getRepoBun(String url); 
 	
 }
