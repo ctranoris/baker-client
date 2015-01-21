@@ -27,6 +27,7 @@
 
 			<bean class="gr.upatras.ece.nam.baker.client.impl.BakerClientAPIImpl">
 				<property name="bakerInstallationMgmtRef" ref="bakerInstallationMgmtBean" />
+				<property name="repoWebClient" ref="repoWebClientBean" />
 			</bean>
 		</jaxrs:serviceBeans>
 		<jaxrs:providers>

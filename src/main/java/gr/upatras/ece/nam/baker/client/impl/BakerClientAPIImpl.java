@@ -17,10 +17,13 @@ package gr.upatras.ece.nam.baker.client.impl;
 
 import java.net.URI;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import gr.upatras.ece.nam.baker.client.model.BunMetadata;
 import gr.upatras.ece.nam.baker.client.model.IBakerClientAPI;
+import gr.upatras.ece.nam.baker.client.model.IRepositoryWebClient;
 import gr.upatras.ece.nam.baker.client.model.InstalledBun;
 
 import org.apache.commons.logging.Log;
@@ -35,6 +38,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
@@ -60,6 +64,15 @@ public class BakerClientAPIImpl implements IBakerClientAPI {
 	//see more about COntext at example http://www.blackpepper.co.uk/custom-context-providers-for-cxf-with-the-context-annotation/
 
 	private BakerInstallationMgmt bakerInstallationMgmtRef;
+	private IRepositoryWebClient repoWebClient;
+
+	public IRepositoryWebClient getRepoWebClient() {
+		return repoWebClient;
+	}
+
+	public void setRepoWebClient(IRepositoryWebClient repoWebClient) {
+		this.repoWebClient = repoWebClient;
+	}
 
 	public BakerInstallationMgmt getBakerInstallationMgmtRef() {
 		return bakerInstallationMgmtRef;
@@ -68,6 +81,31 @@ public class BakerClientAPIImpl implements IBakerClientAPI {
 	public void setBakerInstallationMgmtRef(BakerInstallationMgmt bakerServiceRef) {
 		this.bakerInstallationMgmtRef = bakerServiceRef;
 	}
+	
+	
+	
+	@GET
+	@Path("/remoterepo/buns")
+	@Produces("application/json")
+	public Response getRemoteRepoBuns( ){
+
+
+		String url = System.getProperty("marketplace_api_endpoint")+"/buns";
+		List<BunMetadata> buns = repoWebClient.getRepoBuns(url);
+		return Response.ok(buns).build();
+	}
+	
+	@GET
+	@Path("/remoterepo/buns/uuid/{uuid}")
+	@Produces("application/json")
+	public Response getRemoteRepoBunByUUID( @PathParam("uuid") String uuid){
+
+
+		String url = System.getProperty("marketplace_api_endpoint")+"/buns/uuid/"+uuid;
+		BunMetadata bun = repoWebClient.getRepoBun(url);
+		return Response.ok(bun).build();
+	}	
+	
 
 	// just to get an example json!
 	@GET

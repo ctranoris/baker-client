@@ -87,7 +87,7 @@ public class BakerJpaController {
 		}
 		
 		if ( System.getProperty("marketplace_api_endpoint") == null ){
-			System.setProperty("marketplace_api_endpoint", "http://localhost:13000/baker");
+			System.setProperty("marketplace_api_endpoint", "http://localhost:13000/baker/services/api/repo");
 //			System.setProperty("marketplace_api_endpoint", "http://83.212.106.218:8080/baker");
 		}
 		

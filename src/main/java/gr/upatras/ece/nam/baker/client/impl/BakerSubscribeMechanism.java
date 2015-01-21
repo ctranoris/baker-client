@@ -68,7 +68,7 @@ public class BakerSubscribeMechanism {
 			Thread thisThread = Thread.currentThread();
 			
 			
-			while ( true ) {
+			while ( !threadSuspended ) {
 				
 				
 				try {
@@ -81,21 +81,21 @@ public class BakerSubscribeMechanism {
 					if ( (bakerJpaController!=null) && (bakerJpaController.readPropertyByName("UUID")!=null) ){
 						uuid = bakerJpaController.readPropertyByName("UUID").getValue();
 						sr = repoWebClient.registerClientToRepo(uuid);
+						logger.info("REGISTERclient thread succesfully registered sr="+sr.toString());
 						
 					}
 					
-					if (sr!=null)
+					if (sr!=null){
+						logger.info("REGISTERclient thread succesfully registered");
 						threadSuspended = true;
-					else
-						logger.info("REGISTERclient thread will retry in 1 min");
-					
-					
-					Thread.sleep(60 * 1000); // wait a minute
-
-					synchronized (this) {
-						while (threadSuspended)
-							wait();
+						
 					}
+					else {
+						logger.info("REGISTERclient thread will retry in 1 min");
+						Thread.sleep(60 * 1000); // wait a minute
+					}
+
+					
 
 				} catch (InterruptedException e) {
 					
