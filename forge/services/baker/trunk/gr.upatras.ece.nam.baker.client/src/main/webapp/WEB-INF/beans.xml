@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+	xmlns:cxf="http://cxf.apache.org/core"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation=" http://www.springframework.org/schema/beans  http://www.springframework.org/schema/beans/spring-beans-3.0.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd http://cxf.apache.org/jaxrs http://cxf.apache.org/schemas/jaxrs.xsd http://cxf.apache.org/core http://cxf.apache.org/schemas/core.xsd  http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util.xsd ">
+	<import resource="classpath:META-INF/cxf/cxf.xml" />
+	<context:property-placeholder />
+	<context:annotation-config />
+	<bean
+		class="org.springframework.web.context.support.ServletContextPropertyPlaceholderConfigurer" />
+	<bean
+		class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer" />
+
+
+	<bean id="repoWebClientBean" class="gr.upatras.ece.nam.baker.client.impl.RepositoryWebClient" />
+
+	<bean id="bakerInstallationMgmtBean" class="gr.upatras.ece.nam.baker.client.impl.BakerInstallationMgmt">
+		<property name="repoWebClient" ref="repoWebClientBean" />
+		<property name="bakerJpaController" ref="bakerJpaControllerRef" />
+	</bean>
+
+	<jaxrs:server id="services" address="/api/">
+		<jaxrs:serviceBeans>
+
+			<bean class="gr.upatras.ece.nam.baker.client.impl.BakerClientAPIImpl">
+				<property name="bakerInstallationMgmtRef" ref="bakerInstallationMgmtBean" />
+			</bean>
+		</jaxrs:serviceBeans>
+		<jaxrs:providers>
+			<bean class="org.codehaus.jackson.jaxrs.JacksonJsonProvider" />
+			<!-- bean class="org.apache.cxf.rs.security.cors.CrossOriginResourceSharingFilter"/ -->
+		</jaxrs:providers>
+
+
+	</jaxrs:server>
+
+	<bean id="bakerSubscribeMechanismBean" class="gr.upatras.ece.nam.baker.client.impl.BakerSubscribeMechanism">
+		<property name="repoWebClient" ref="repoWebClientBean" />
+		<property name="bakerJpaController" ref="bakerJpaControllerRef" />
+	</bean>
+	
+	
+	
+
+	<!-- JPA Beans configuration -->
+
+	<bean name="bakerJpaControllerRef" class="gr.upatras.ece.nam.baker.client.impl.BakerJpaController">
+	</bean>
+
+<!-- 
+	<bean id="data_source_h2"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="org.h2.Driver" />
+		<property name="url"
+			value="jdbc:h2:~/.baker/db/bakerdb;CIPHER=AES;AUTO_SERVER=TRUE" />
+		<property name="username" value="bro4xipidb" />
+		<property name="password" value="filepwd bro4xipidb" />
+	</bean>
+ -->
+
+
+
+	<bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalEntityManagerFactoryBean">
+		<property name="persistenceUnitName" value="bakerclientdb" />
+		<property name="jpaVendorAdapter" ref="jpaAdapter" />
+	</bean>
+
+	
+
+	<bean id="jpaAdapter" class="org.springframework.orm.jpa.vendor.OpenJpaVendorAdapter"> 
+		<property name="databasePlatform" value="org.apache.openjpa.jdbc.sql.H2Dictionary" 
+		/> <property name="showSql" value="false" /> <property name="database" value="H2" 
+		/> <property name="generateDdl" value="true" /> </bean> 
+
+	<!-- <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager"> 
+		<property name="entityManagerFactory" ref="entityManagerFactory" /> < property 
+		name="dataSource" ref="data_source_h2" / > </bean> -->
+
+
+	
+
+
+</beans>
