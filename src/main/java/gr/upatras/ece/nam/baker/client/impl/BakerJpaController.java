@@ -80,8 +80,7 @@ public class BakerJpaController {
 			String uuid = UUID.randomUUID().toString();
 			p.setValue(uuid); //the unique uuid of this client instance!
 			saveProperty(p);
-			logger.info("FIRST TIME Initialization! UUID = "+ uuid);
-			
+			logger.info("FIRST TIME Initialization! UUID = "+ uuid);			
 			
 			
 		}
