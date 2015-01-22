@@ -14,28 +14,17 @@
  */
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.security.ProtectionDomain;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.tomcat.InstanceManager;
-import org.apache.tomcat.SimpleInstanceManager;
-import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
-import org.eclipse.jetty.apache.jsp.JettyJasperInitializer;
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.log.JavaUtilLog;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -52,13 +41,23 @@ public class BakerClient
 
     public static void main(String[] args) throws Exception
     {
+    	//mvn clean install, to produce a war with embedded jetty that runs with: 
+    	//java -jar '-Dmarketplace_api_endpoint=http://localhost:13000/baker/services/api/repo' '-Dbaker_client_owner_id=1' '-Dbaker_client_owner_username=admin' '-Dbaker_client_host_fqdn=example.com' gr.upatras.ece.nam.baker.client-0.0.1-SNAPSHOT.war 
 
-        String marketplace_api_endpoint = args[0];
-        System.setProperty("marketplace_api_endpoint",marketplace_api_endpoint);
-        
+
+        //String marketplace_api_endpoint = args[0];
+        //System.setProperty("marketplace_api_endpoint",marketplace_api_endpoint);
+
+    	
         int port = 13001;
         Log.setLog(new JavaUtilLog());
 
+        LOG.info("marketplace_api_endpoint= "+System.getProperty("marketplace_api_endpoint"));
+        LOG.info("baker_client_owner_id= "+System.getProperty("baker_client_owner_id"));
+        LOG.info("baker_client_owner_username= "+System.getProperty("baker_client_owner_username"));
+        LOG.info("baker_client_host_fqdn= "+System.getProperty("baker_client_host_fqdn"));
+    	
+    	
         BakerClient main = new BakerClient(port);
         main.start();
         main.waitForInterrupt();
@@ -86,39 +85,14 @@ public class BakerClient
         ServerConnector connector = connector();
         server.addConnector(connector);
 
-        //URI baseUri = getWebRootResourceUri();
-
-        // Set JSP to use Standard JavaC always
-        System.setProperty("org.apache.jasper.compiler.disablejsr199", "false");
-
-//        WebAppContext webAppContext = getWebAppContext(baseUri, getScratchDir());
-//        server.setHandler(webAppContext);
-        
+       
         ProtectionDomain domain = BakerClient.class.getProtectionDomain();
         URL location = domain.getCodeSource().getLocation();
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-
-        webapp.setAttribute("javax.servlet.context.tempdir", getScratchDir());
-        webapp.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-          ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/.*taglibs.*\\.jar$");
-        //context.setResourceBase(baseUri.toASCIIString());
-        
-        webapp.setAttribute("org.eclipse.jetty.containerInitializers", jspInitializers());
-        
-        
-        webapp.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
-        //webapp.addBean(new ServletContainerInitializersStarter(webapp), true);
-        webapp.setClassLoader(getUrlClassLoader());
-
-        //webapp.addServlet(exampleJspFileMappedServletHolder(), "/test/foo/");
-        //webapp.addServlet(defaultServletHolder(baseUri), "/");
-        
         
         webapp.setWar(location.toExternalForm());
         server.setHandler(webapp);
-        
-        
 
         // Start Server
         server.start();
@@ -138,106 +112,9 @@ public class BakerClient
         return connector;
     }
 
-//    private URI getWebRootResourceUri() throws FileNotFoundException, URISyntaxException
-//    {
-//        URL indexUri = this.getClass().getResource(WEBROOT_INDEX);
-//        if (indexUri == null)
-//        {
-//            throw new FileNotFoundException("Unable to find resource " + WEBROOT_INDEX);
-//        }
-//        // Points to wherever /webroot/ (the resource) is
-//        return indexUri.toURI();
-//    }
-
-    /**
-     * Establish Scratch directory for the servlet context (used by JSP compilation)
-     */
-    private File getScratchDir() throws IOException
-    {
-        File tempDir = new File(System.getProperty("java.io.tmpdir"));
-        File scratchDir = new File(tempDir.toString(), "embedded-jetty-jsp");
-
-        if (!scratchDir.exists())
-        {
-            if (!scratchDir.mkdirs())
-            {
-                throw new IOException("Unable to create scratch directory: " + scratchDir);
-            }
-        }
-        return scratchDir;
-    }
-
-    /**
-     * Setup the basic application "context" for this application at "/"
-     * This is also known as the handler tree (in jetty speak)
-     */
-    private WebAppContext getWebAppContext(URI baseUri, File scratchDir)
-    {
-        WebAppContext context = new WebAppContext();
-        context.setContextPath("/");
-        context.setAttribute("javax.servlet.context.tempdir", scratchDir);
-        context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
-          ".*/[^/]*servlet-api-[^/]*\\.jar$|.*/javax.servlet.jsp.jstl-.*\\.jar$|.*/.*taglibs.*\\.jar$");
-        context.setResourceBase(baseUri.toASCIIString());
-        context.setAttribute("org.eclipse.jetty.containerInitializers", jspInitializers());
-        context.setAttribute(InstanceManager.class.getName(), new SimpleInstanceManager());
-        context.addBean(new ServletContainerInitializersStarter(context), true);
-        context.setClassLoader(getUrlClassLoader());
-
-
-        context.addServlet(exampleJspFileMappedServletHolder(), "/test/foo/");
-        context.addServlet(defaultServletHolder(baseUri), "/");
-        return context;
-    }
-
-    /**
-     * Ensure the jsp engine is initialized correctly
-     */
-    private List<ContainerInitializer> jspInitializers()
-    {
-        JettyJasperInitializer sci = new JettyJasperInitializer();
-        ContainerInitializer initializer = new ContainerInitializer(sci, null);
-        List<ContainerInitializer> initializers = new ArrayList<ContainerInitializer>();
-        initializers.add(initializer);
-        return initializers;
-    }
-
-    /**
-     * Set Classloader of Context to be sane (needed for JSTL)
-     * JSP requires a non-System classloader, this simply wraps the
-     * embedded System classloader in a way that makes it suitable
-     * for JSP to use
-     */
-    private ClassLoader getUrlClassLoader()
-    {
-        ClassLoader jspClassLoader = new URLClassLoader(new URL[0], this.getClass().getClassLoader());
-        return jspClassLoader;
-    }
-
    
 
-    /**
-     * Create Example of mapping jsp to path spec
-     */
-    private ServletHolder exampleJspFileMappedServletHolder()
-    {
-        ServletHolder holderAltMapping = new ServletHolder();
-        holderAltMapping.setName("foo.jsp");
-        holderAltMapping.setForcedPath("/test/foo/foo.jsp");
-        return holderAltMapping;
-    }
-
-    /**
-     * Create Default Servlet (must be named "default")
-     */
-    private ServletHolder defaultServletHolder(URI baseUri)
-    {
-        ServletHolder holderDefault = new ServletHolder("default", DefaultServlet.class);
-        LOG.info("Base URI: " + baseUri);
-        holderDefault.setInitParameter("resourceBase", baseUri.toASCIIString());
-        holderDefault.setInitParameter("dirAllowed", "true");
-        return holderDefault;
-    }
+   
 
     /**
      * Establish the Server URI

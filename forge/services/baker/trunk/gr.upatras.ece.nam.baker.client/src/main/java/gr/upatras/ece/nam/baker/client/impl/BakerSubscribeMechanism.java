@@ -96,7 +96,8 @@ public class BakerSubscribeMechanism {
 					if ((bakerJpaController != null) && (bakerJpaController.readPropertyByName("UUID") != null)) {
 						uuid = bakerJpaController.readPropertyByName("UUID").getValue();
 						sr = repoWebClient.registerClientToRepo(uuid);
-						logger.info("REGISTERclient thread succesfully registered sr=" + sr.toString());
+						if (sr!=null)
+							logger.info("REGISTERclient thread succesfully registered SubscribedResource=" + sr.getUuid() );
 					}
 
 					if (sr != null) {
