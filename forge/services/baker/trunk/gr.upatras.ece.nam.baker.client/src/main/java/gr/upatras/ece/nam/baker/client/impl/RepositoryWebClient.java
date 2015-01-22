@@ -263,10 +263,10 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 	}
 
 	@Override
-	public Boolean reportToContainerBunStatus(String clientUUID, String installedBunUUID, InstalledBunStatus status) {
+	public Boolean reportToContainerBunStatus(String clientUUID, String installedBunUUID, InstalledBunStatus status, Long deployContainerId) {
 
 		String url = System.getProperty("marketplace_api_endpoint") + "/registerresource/deployments/target/uuid/" + clientUUID + "/installedbunuuid/"
-				+ installedBunUUID + "/status/" + status;
+				+ installedBunUUID + "/status/" + status+"/deployContainerid/"+deployContainerId;
 
 		logger.info("fetchMetadata from: " + url);
 		try {

@@ -20,6 +20,7 @@ import java.util.List;
 import gr.upatras.ece.nam.baker.client.model.BunMetadata;
 import gr.upatras.ece.nam.baker.client.model.DeployArtifact;
 import gr.upatras.ece.nam.baker.client.model.DeployContainer;
+import gr.upatras.ece.nam.baker.client.model.DeploymentDescriptorStatus;
 import gr.upatras.ece.nam.baker.client.model.IRepositoryWebClient;
 import gr.upatras.ece.nam.baker.client.model.InstalledBun;
 import gr.upatras.ece.nam.baker.client.model.InstalledBunStatus;
@@ -139,29 +140,61 @@ public class BakerSubscribeMechanism {
 						clientUUID = bakerJpaController.readPropertyByName("UUID").getValue();
 						DeployContainer dc = repoWebClient.getDeployContainerInfo(clientUUID);
 						if (dc!=null){
-							logger.info("PollBroker got a DeployContainer=" + dc.getId());
+							logger.info("PollBroker got a DeployContainer=" + dc.getId()+". MasterDeploymentStatus= "+dc.getMasterDeploymentStatus());
 							List<DeployArtifact> das = dc.getDeployArtifacts();
 							for (DeployArtifact deployArtifact : das) {								
 								logger.info("deployArtifact artifactPackageURL=" + deployArtifact.getArtifactPackageURL() );
 								logger.info("deployArtifact status =" + deployArtifact.getStatus() );
 								logger.info("deployArtifact uuid =" + deployArtifact.getUuid()  );
-								InstalledBun ibtest = bakerInstallationMgmtRef.getBun( deployArtifact.getUuid() );
+								InstalledBun ibtest = bakerInstallationMgmtRef.getBun( deployArtifact.getUuid() );				
+								String url = System.getProperty("marketplace_api_endpoint")+"/buns/uuid/"+deployArtifact.getUuid();	
 								
 								
-								if ((ibtest != null) && (ibtest.getStatus()!= InstalledBunStatus.FAILED )&& (ibtest.getStatus()!= InstalledBunStatus.UNINSTALLED ) ){
-									logger.info("installedBun status =" + ibtest.getStatus()  ); 
-									repoWebClient.reportToContainerBunStatus(clientUUID, ibtest.getUuid(), ibtest.getStatus() );
-									
-								}else if (deployArtifact.getStatus().equals( InstalledBunStatus.INIT ) ) {
-									
+								if (deployArtifact.getStatus().equals( InstalledBunStatus.INIT ) &&
+										( (dc.getMasterDeploymentStatus() == DeploymentDescriptorStatus.INSTALLING) ) || (dc.getMasterDeploymentStatus() == DeploymentDescriptorStatus.QUEUED )) {
+									logger.info("Installing or QUEUED"  );
 									logger.info("installedBun is not installed. We must take action if deployArtifact.getStatus()==INIT"  );
-									logger.info("Fetching info for BunMetadata with UUID=  " + deployArtifact.getUuid() );									
-									String url = System.getProperty("marketplace_api_endpoint")+"/buns/uuid/"+deployArtifact.getUuid();								
+									logger.info("Fetching info for BunMetadata with UUID=  " + deployArtifact.getUuid() );											
 									
 									//logger.info(" BunMetadata for UUID=  " + deployArtifact.getUuid() + " downloaded. Bun.id = " + bun.getId()+". Starting installation.");			
 
+									//start installation
 									InstalledBun installedBun = bakerInstallationMgmtRef.installBunAndStart( deployArtifact.getUuid(),  url );
-									Thread.sleep(5*60*1000); // wait 5 minutes
+									
+									int retries=0;
+									ibtest = bakerInstallationMgmtRef.getBun( deployArtifact.getUuid() );
+									repoWebClient.reportToContainerBunStatus(clientUUID, ibtest.getUuid(), ibtest.getStatus(), dc.getId() );
+									
+									while ( (retries<40) && (ibtest.getStatus()!=InstalledBunStatus.STARTED)
+											&& (ibtest.getStatus()!=InstalledBunStatus.FAILED)
+											&& (ibtest.getStatus()!=InstalledBunStatus.UNINSTALLED) ){									
+										Thread.sleep(30*1000); // wait 30 secs and retry.Total wait 20 minutes!
+										ibtest = bakerInstallationMgmtRef.getBun( deployArtifact.getUuid() );
+										repoWebClient.reportToContainerBunStatus(clientUUID, ibtest.getUuid(), ibtest.getStatus(), dc.getId() );
+										retries++;
+									}
+									
+								}else if (dc.getMasterDeploymentStatus() == DeploymentDescriptorStatus.UNINSTALLING){
+									logger.info("getMasterDeploymentStatus UNINSTALLING"  );
+									//start installation
+									bakerInstallationMgmtRef.uninstallBun( deployArtifact.getUuid() );									
+									Thread.sleep(60*1000); // wait 1 minute
+									
+									int retries=0;
+									ibtest = bakerInstallationMgmtRef.getBun( deployArtifact.getUuid() );
+									repoWebClient.reportToContainerBunStatus(clientUUID, ibtest.getUuid(), ibtest.getStatus(), dc.getId() );
+									while ( (retries<40) && (ibtest.getStatus()!=InstalledBunStatus.STARTED)
+											&& (ibtest.getStatus()!=InstalledBunStatus.FAILED)
+											&& (ibtest.getStatus()!=InstalledBunStatus.UNINSTALLED) ){									
+										Thread.sleep(30*1000); // wait 30 secs and retry.Total wait 20 minutes!
+										ibtest = bakerInstallationMgmtRef.getBun( deployArtifact.getUuid() );
+										repoWebClient.reportToContainerBunStatus(clientUUID, ibtest.getUuid(), ibtest.getStatus(), dc.getId() );
+										retries++;
+									}
+									
+								}else if ((ibtest != null)  ){
+									logger.info("installedBun status =" + ibtest.getStatus()  ); 
+									repoWebClient.reportToContainerBunStatus(clientUUID, ibtest.getUuid(), ibtest.getStatus(), dc.getId() );
 									
 								}
 								
@@ -176,8 +209,14 @@ public class BakerSubscribeMechanism {
 					
 					
 				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}finally{
+					logger.info("continue running");
 
-				}
+				} 
+				
+				
 			}
 
 		}
