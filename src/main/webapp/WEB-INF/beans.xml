@@ -41,6 +41,7 @@
 	<bean id="bakerSubscribeMechanismBean" class="gr.upatras.ece.nam.baker.client.impl.BakerSubscribeMechanism">
 		<property name="repoWebClient" ref="repoWebClientBean" />
 		<property name="bakerJpaController" ref="bakerJpaControllerRef" />
+			<property name="bakerInstallationMgmtRef" ref="bakerInstallationMgmtBean" />
 	</bean>
 	
 	

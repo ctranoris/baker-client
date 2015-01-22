@@ -47,6 +47,13 @@ public interface IRepositoryWebClient {
 	public List<BunMetadata> getRepoBuns(String url);
 
 
-	public BunMetadata getRepoBun(String url); 
+	public BunMetadata getRepoBun(String url);
+
+
+	public DeployContainer getDeployContainerInfo(String uuid);
+
+
+	public Boolean reportToContainerBunStatus(String clientUUID, String installedBunUUID, InstalledBunStatus status);
+	
 	
 }
