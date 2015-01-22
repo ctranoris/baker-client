@@ -17,7 +17,9 @@ package gr.upatras.ece.nam.baker.client.impl;
 
 import gr.upatras.ece.nam.baker.client.model.BakerUser;
 import gr.upatras.ece.nam.baker.client.model.BunMetadata;
+import gr.upatras.ece.nam.baker.client.model.DeployContainer;
 import gr.upatras.ece.nam.baker.client.model.IRepositoryWebClient;
+import gr.upatras.ece.nam.baker.client.model.InstalledBunStatus;
 import gr.upatras.ece.nam.baker.client.model.SubscribedResource;
 
 import java.io.File;
@@ -114,7 +116,7 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 	public SubscribedResource registerClientToRepo(String uuid) {
 
 		SubscribedResource sr = new SubscribedResource();
-		
+
 		try {
 			String url = System.getProperty("marketplace_api_endpoint") + "/registerresource";
 			BakerUser owner = new BakerUser();
@@ -156,7 +158,7 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 				sr = parser.readValueAs(SubscribedResource.class);
 
 				logger.info("registerClientToRepo OK SubscribedResource: " + sr.getId() + " , for uuid=" + sr.getUuid());
-					
+
 				return sr;
 			}
 
@@ -172,7 +174,7 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 
 	@Override
 	public List<BunMetadata> getRepoBuns(String url) {
-		logger.info("fetchMetadata from: " + url  );
+		logger.info("fetchMetadata from: " + url);
 
 		try {
 			List<Object> providers = new ArrayList<Object>();
@@ -182,13 +184,13 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 			if (r.getStatus() == Response.Status.OK.getStatusCode()) {
 				MappingJsonFactory factory = new MappingJsonFactory();
 				JsonParser parser = factory.createJsonParser((InputStream) r.getEntity());
-				
+
 				JsonNode node = parser.readValueAsTree();
 				ObjectMapper mapper = new ObjectMapper();
 				TypeReference<List<BunMetadata>> typeRef = new TypeReference<List<BunMetadata>>() {
 				};
-				List<BunMetadata> output = mapper.readValue(node.traverse(), typeRef);				
-				
+				List<BunMetadata> output = mapper.readValue(node.traverse(), typeRef);
+
 				return output;
 			}
 
@@ -205,7 +207,7 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 
 	@Override
 	public BunMetadata getRepoBun(String url) {
-		logger.info("fetchMetadata from: " + url  );
+		logger.info("fetchMetadata from: " + url);
 
 		try {
 			List<Object> providers = new ArrayList<Object>();
@@ -228,6 +230,60 @@ public class RepositoryWebClient implements IRepositoryWebClient {
 		}
 
 		return null;
+	}
+
+	@Override
+	public DeployContainer getDeployContainerInfo(String uuid) {
+
+		String url = System.getProperty("marketplace_api_endpoint") + "/registerresource/deployments/target/uuid/" + uuid;
+
+		logger.info("fetchMetadata from: " + url);
+
+		try {
+			List<Object> providers = new ArrayList<Object>();
+			providers.add(new org.codehaus.jackson.jaxrs.JacksonJsonProvider());
+			WebClient client = WebClient.create(url, providers);
+			Response r = client.accept("application/json").type("application/json").get();
+			if (r.getStatus() == Response.Status.OK.getStatusCode()) {
+				MappingJsonFactory factory = new MappingJsonFactory();
+				JsonParser parser = factory.createJsonParser((InputStream) r.getEntity());
+				DeployContainer output = parser.readValueAs(DeployContainer.class);
+				return output;
+			}
+
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	@Override
+	public Boolean reportToContainerBunStatus(String clientUUID, String installedBunUUID, InstalledBunStatus status) {
+
+		String url = System.getProperty("marketplace_api_endpoint") + "/registerresource/deployments/target/uuid/" + clientUUID + "/installedbunuuid/"
+				+ installedBunUUID + "/status/" + status;
+
+		logger.info("fetchMetadata from: " + url);
+		try {
+			List<Object> providers = new ArrayList<Object>();
+			providers.add(new org.codehaus.jackson.jaxrs.JacksonJsonProvider());
+			WebClient client = WebClient.create(url, providers);
+			Response r = client.accept("application/json").type("application/json").put(null);
+			if (r.getStatus() == Response.Status.OK.getStatusCode()) {
+
+				return true;
+			}
+		} finally {
+
+		}
+
+		return false;
+
 	}
 
 }
