@@ -53,7 +53,7 @@ public interface IRepositoryWebClient {
 	public DeployContainer getDeployContainerInfo(String uuid);
 
 
-	public Boolean reportToContainerBunStatus(String clientUUID, String installedBunUUID, InstalledBunStatus status);
+	public Boolean reportToContainerBunStatus(String clientUUID, String installedBunUUID, InstalledBunStatus status, Long deployContainerId);
 	
 	
 }
